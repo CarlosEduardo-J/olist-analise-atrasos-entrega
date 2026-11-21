@@ -1,0 +1,17 @@
+# Dados brutos (licença e tamanho): cada pessoa baixa do Kaggle
+data/raw/*
+!data/raw/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Credenciais
+.env
+
+# Sistema
+.DS_Store
+Thumbs.db

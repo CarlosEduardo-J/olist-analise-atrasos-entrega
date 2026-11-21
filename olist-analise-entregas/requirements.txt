@@ -1,0 +1,10 @@
+pandas
+sqlalchemy
+pymysql
+requests
+scipy
+statsmodels
+plotly
+holidays
+python-dotenv
+jupyter
