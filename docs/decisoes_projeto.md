@@ -55,3 +55,12 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 - **Causa:** esse CSV termina as linhas com `\r\n`, e os demais com `\n`. Com `\n`, o `\r` ficava grudado na última coluna (`review_answer_timestamp`).
 - **Decisão:** usar `LINES TERMINATED BY '\r\n'` só nesse bloco.
 - **Resultado:** `99224` linhas carregadas, mesmo número de registros do CSV, com `Warnings: 0`.
+
+---
+
+## Verificação da carga (`sql/03_verificacao_carga.sql`)
+
+### 010 - Contagem dos CSVs com `Import-Csv`
+- **Decisão:** conferir a carga comparando o `COUNT(*)` de cada tabela com a contagem de registros de cada CSV, feita no PowerShell com `(Import-Csv arquivo.csv).Count`.
+- **Motivo:** o `Import-Csv` conta registros, não linhas de texto. Isso importa em `order_reviews`, porque os comentários têm quebras de linha dentro das aspas.
+- **Resultado:** as 9 contagens bateram, sem linhas perdidas nem duplicadas.
