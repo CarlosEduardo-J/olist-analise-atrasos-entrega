@@ -64,3 +64,15 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 - **Decisão:** conferir a carga comparando o `COUNT(*)` de cada tabela com a contagem de registros de cada CSV, feita no PowerShell com `(Import-Csv arquivo.csv).Count`.
 - **Motivo:** o `Import-Csv` conta registros, não linhas de texto. Isso importa em `order_reviews`, porque os comentários têm quebras de linha dentro das aspas.
 - **Resultado:** as 9 contagens bateram, sem linhas perdidas nem duplicadas.
+
+### 011 - Datas ausentes em `orders` ficam como `NULL`
+- **Decisão:** não preencher nem estimar as datas que faltam. Mantenho como `NULL`.
+- **Motivo:** preencher seria inventar dado. Antes de decidir, olhei onde os `NULL` aparecem: dos 2.965 pedidos sem data de entrega, 1.850 estão em status que não chegam à entrega (canceled, unavailable, invoiced, processing, created, approved), 1.107 estão em `shipped` e 8 em `delivered`. Ou seja, na maior parte dos casos o `NULL` faz sentido.
+- **Impacto:** as médias e contagens de atraso ignoram `NULL` por padrão no MySQL, então não preciso tratar isso a cada consulta.
+
+### 012 - Análise de atraso só com pedidos `delivered` e data de entrega preenchida
+- **Decisão:** deixar de fora da análise de atraso qualquer pedido sem `order_delivered_customer_date`.
+- **Motivo:** sem a data de entrega não consigo calcular atraso. Pedidos cancelados ou que nunca chegaram à entrega também não têm atraso para medir.
+- **Impacto:** 8 pedidos `delivered` ficam de fora, cerca de 0,008% dos 96.478 entregues. Não deve mudar o resultado.
+- **Sobre os 8 pedidos `delivered` sem data:** olhei as outras datas deles e estão preenchidas. Isso sugere que a falha foi só no registro da entrega, mas não consigo confirmar a causa pelos dados.
+- **A confirmar:** o que aconteceu com os 1.107 pedidos `shipped` sem entrega registrada. Podem ter sido pedidos ainda em trânsito quando o dataset foi extraído ou podem ter sido extraviados. Os dados desta etapa não distinguem, então pode virar uma análise à parte.
