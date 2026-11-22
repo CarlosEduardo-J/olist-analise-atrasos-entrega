@@ -124,3 +124,40 @@ UNION ALL
 SELECT 'geolocation', COUNT(*)
 FROM geolocation
 WHERE geolocation_zip_code_prefix LIKE '0%';
+
+
+-- -----------------------------------------------------------------------------
+-- 4) Acentos e codificação
+-- Esperado: textos com acento legíveis, sem sequências como Ã£, Ã§ ou Ã©, que
+-- aparecem quando o texto é lido na codificação errada.
+--
+-- 4.1) Olhando uma amostra dos comentários das avaliações.
+-- Resultado: conferi 20 comentários e os acentos estão corretos (não, é,
+-- confiável, atenção etc.). O CHARACTER SET utf8mb4 da carga funcionou.
+-- -----------------------------------------------------------------------------
+SELECT review_comment_message
+FROM order_reviews
+WHERE review_comment_message IS NOT NULL
+LIMIT 20;
+
+
+-- 4.2) Contagem de comentários com sinais de codificação quebrada, na tabela
+-- toda. Usei COLLATE utf8mb4_bin porque o MySQL, por padrão, ignora acentos nas
+-- comparações e o filtro não provaria nada.
+-- Esperado: 0.
+-- Resultado: 0.
+-- -----------------------------------------------------------------------------
+SELECT COUNT(*) AS comentarios_com_codificacao_quebrada
+FROM order_reviews
+WHERE review_comment_message LIKE '%Ã£%' COLLATE utf8mb4_bin
+   OR review_comment_message LIKE '%Ã§%' COLLATE utf8mb4_bin
+   OR review_comment_message LIKE '%Ã©%' COLLATE utf8mb4_bin;
+
+
+-- 4.3) Controle positivo: um resultado 0 só vale se a checagem for capaz de
+-- encontrar o problema quando ele existe. Aqui testo o mesmo padrão num texto
+-- que está quebrado de propósito.
+-- Esperado: 1.
+-- Resultado: 1, então o 0 do 4.2 é confiável.
+-- -----------------------------------------------------------------------------
+SELECT 'cafÃ©' LIKE '%Ã©%' COLLATE utf8mb4_bin AS deve_ser_1;
