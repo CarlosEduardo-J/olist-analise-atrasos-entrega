@@ -11,6 +11,7 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 - **Decisão:** guardar o CEP como texto de 5 caracteres.
 - **Motivo:** como número, o CEP `01037` viraria `1037` e o cruzamento entre clientes, vendedores e geolocalização falharia.
 - **Alternativa descartada:** `INT`.
+- **Verificado:** nas 3 tabelas com CEP (`customers`, `sellers` e `geolocation`) todos os valores têm 5 caracteres e vários começam com `0`, então o zero à esquerda foi preservado (ver `03_verificacao_carga.sql`, bloco 3).
 
 ### 002 - Sem `FOREIGN KEY` na criação das tabelas
 - **Decisão:** criar apenas índices nas colunas usadas em JOIN.

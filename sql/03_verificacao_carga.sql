@@ -77,9 +77,50 @@ ORDER BY qtd_status DESC;
 -- 2.3) Os 8 pedidos delivered sem data de entrega.
 -- Sem a data de entrega não dá para calcular atraso, então esses pedidos
 -- ficam de fora da análise de atraso.
--- Resultado: as demais datas estão preenchidas, então parece falha só no registro da entrega
+-- Resultado: as demais datas estão preenchidas, então parece falha só no
+-- registro da entrega.
 -- -----------------------------------------------------------------------------
 SELECT *
 FROM orders
 WHERE order_status = 'delivered'
   AND order_delivered_customer_date IS NULL;
+
+
+-- -----------------------------------------------------------------------------
+-- 3) CEPs mantiveram o zero à esquerda?
+-- Esperado: todos com 5 caracteres e vários começando com 0 (prova de que o
+-- CHAR(5) funcionou e o CEP não virou número).
+--
+-- 3.1) CEPs com tamanho diferente de 5, nas 3 tabelas que têm CEP.
+-- Esperado: 0 em todas.
+-- Resultado: 0 nas três tabelas, todos os CEPs têm 5 caracteres.
+-- -----------------------------------------------------------------------------
+SELECT 'customers' AS tabela, COUNT(*) AS ceps_fora_do_padrao
+FROM customers
+WHERE LENGTH(customer_zip_code_prefix) <> 5
+UNION ALL
+SELECT 'sellers', COUNT(*)
+FROM sellers
+WHERE LENGTH(seller_zip_code_prefix) <> 5
+UNION ALL
+SELECT 'geolocation', COUNT(*)
+FROM geolocation
+WHERE LENGTH(geolocation_zip_code_prefix) <> 5;
+
+
+-- 3.2) CEPs que começam com 0.
+-- Esperado: número maior que 0. Se fosse 0, o zero tinha sido perdido na carga.
+-- Resultado: 23.995 em customers, 1.027 em sellers e 245.733 em geolocation
+-- começam com 0, então o zero à esquerda foi preservado.
+-- -----------------------------------------------------------------------------
+SELECT 'customers' AS tabela, COUNT(*) AS ceps_com_zero
+FROM customers
+WHERE customer_zip_code_prefix LIKE '0%'
+UNION ALL
+SELECT 'sellers', COUNT(*)
+FROM sellers
+WHERE seller_zip_code_prefix LIKE '0%'
+UNION ALL
+SELECT 'geolocation', COUNT(*)
+FROM geolocation
+WHERE geolocation_zip_code_prefix LIKE '0%';
