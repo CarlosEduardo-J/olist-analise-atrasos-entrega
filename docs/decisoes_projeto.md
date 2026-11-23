@@ -25,8 +25,9 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 
 ### 004 - Chave artificial em `order_reviews`
 - **Decisão:** usar uma coluna `id` com `AUTO_INCREMENT` como chave primária, em vez de `review_id`.
-- **Motivo:** não tenho certeza de que `review_id` é único, e um pedido pode ter mais de uma avaliação.
-- **A confirmar:** contar `review_id` duplicados em `04_qualidade_dados.sql` e registrar o número aqui.
+- **Motivo:** desconfiei que `review_id` não fosse único, e um pedido pode ter mais de uma avaliação.
+- **Verificado:** a tabela tem 99.224 linhas e 98.410 `review_id` distintos, ou seja, 814 linhas a mais por causa de repetição. Nos casos que olhei (os 10 mais repetidos), o mesmo `review_id` aparece em 3 pedidos diferentes. Então `review_id` não identifica uma avaliação sozinho e a chave artificial se justifica (ver `04_qualidade_dados.sql`).
+- **A confirmar:** por que isso acontece. Os dados não explicam a causa. Também preciso ver quantas avaliações cada pedido tem, para não duplicar linhas ao juntar pedidos com avaliações.
 
 ### 005 - Cliente real é `customer_unique_id`, não `customer_id`
 - **Decisão:** nas análises de clientes, usar `customer_unique_id`.
