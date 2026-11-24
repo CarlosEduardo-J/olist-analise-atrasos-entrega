@@ -16,7 +16,8 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 ### 002 - Sem `FOREIGN KEY` na criação das tabelas
 - **Decisão:** criar apenas índices nas colunas usadas em JOIN.
 - **Motivo:** prefiro carregar tudo primeiro e checar registros órfãos na etapa de qualidade, em vez de a carga travar por causa de uma FK.
-- **A confirmar:** resultado da checagem de integridade em `04_qualidade_dados.sql`. Se estiver tudo consistente, posso adicionar as FKs depois.
+- **Verificado:** conferi 6 relações (`orders`→`customers`; `order_items`→`orders`, `products` e `sellers`; `order_payments`→`orders`; `order_reviews`→`orders`) com `LEFT JOIN` e `IS NULL`, e não há registros órfãos em nenhuma delas (ver `04_qualidade_dados.sql`, bloco 4). Com isso, a carga teria funcionado mesmo com FKs.
+- **A decidir:** se adiciono as FKs agora, com `ALTER TABLE`, ou deixo só os índices.
 
 ### 003 - Correção de "lenght" para "length"
 - **Decisão:** renomear `product_name_lenght` e `product_description_lenght` para `product_name_length` e `product_description_length`.
@@ -81,3 +82,12 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 - **Impacto:** 8 pedidos `delivered` ficam de fora, cerca de 0,008% dos 96.478 entregues. Não deve mudar o resultado.
 - **Sobre os 8 pedidos `delivered` sem data:** olhei as outras datas deles e estão preenchidas. Isso sugere que a falha foi só no registro da entrega, mas não consigo confirmar a causa pelos dados.
 - **A confirmar:** o que aconteceu com os 1.107 pedidos `shipped` sem entrega registrada. Podem ter sido pedidos ainda em trânsito quando o dataset foi extraído ou podem ter sido extraviados. Os dados desta etapa não distinguem, então pode virar uma análise à parte.
+
+---
+
+## Qualidade dos dados (`sql/04_qualidade_dados.sql`)
+
+### 013 - Produtos sem categoria ou sem tradução
+- **Problema:** em `products`, 610 produtos não têm categoria (`NULL`) e 13 têm categoria sem tradução em `product_category_translation`: `pc_gamer` (3 produtos) e `portateis_cozinha_e_preparadores_de_alimentos` (10).
+- **Impacto:** na análise por categoria, esses produtos somem de um `JOIN` comum ou aparecem sem nome em inglês.
+- **A decidir:** como tratar nas views. Opções: usar `LEFT JOIN` e mostrar o nome em português quando faltar a tradução, e rotular os 610 como "sem categoria".
