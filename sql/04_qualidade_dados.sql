@@ -85,3 +85,46 @@ FROM orders o
 LEFT JOIN order_reviews od
     ON o.order_id = od.order_id
 WHERE od.review_score IS NULL;
+
+
+-- -----------------------------------------------------------------------------
+-- 3) Cliente real: customer_id ou customer_unique_id?
+-- Motivo da pergunta: customer_id parece ser gerado por pedido, então a mesma
+-- pessoa pode ter vários. Se for assim, contar customer_id conta pedidos e não
+-- clientes.
+--
+-- 3.1) Total de customer_id vs. pessoas distintas (customer_unique_id).
+-- Resultado: 99.441 customer_id e 96.096 customer_unique_id distintos. São
+-- 3.345 linhas a mais por causa de pessoas que aparecem mais de uma vez.
+-- Conclusão: contar customer_id superconta clientes em cerca de 3,4%. Para
+-- análises sobre pessoas vou usar customer_unique_id.
+-- -----------------------------------------------------------------------------
+SELECT
+    COUNT(*) AS qtd_ids,
+    COUNT(DISTINCT customer_unique_id) AS qtd_clientes
+FROM customers;
+
+
+-- 3.2) Quantos customer_id cada pessoa tem.
+-- Primeiro conto os customer_id de cada customer_unique_id (a CTE) e depois
+-- agrupo por essa contagem para ver quantas pessoas há em cada grupo.
+-- Resultado: 93.099 pessoas têm 1 customer_id, 2.745 têm 2, 203 têm 3, 30 têm 4,
+-- 8 têm 5, 6 têm 6, 3 têm 7, 1 tem 9 e 1 tem 17. As contas fecham: 96.096
+-- pessoas e 99.441 customer_id.
+-- Conclusão: cerca de 3% das pessoas (2.997) têm mais de um customer_id. Se
+-- cada customer_id corresponder a um pedido (ainda não conferi), é uma taxa de
+-- recompra baixa.
+-- -----------------------------------------------------------------------------
+WITH ids_por_cliente AS (
+    SELECT
+        customer_unique_id,
+        COUNT(*) AS qtd_ids
+    FROM customers
+    GROUP BY customer_unique_id
+)
+SELECT
+    qtd_ids,
+    COUNT(customer_unique_id) AS qtd_clientes
+FROM ids_por_cliente
+GROUP BY qtd_ids
+ORDER BY qtd_ids DESC;

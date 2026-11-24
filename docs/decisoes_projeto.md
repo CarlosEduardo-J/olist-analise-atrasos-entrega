@@ -34,7 +34,8 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 ### 005 - Cliente real é `customer_unique_id`, não `customer_id`
 - **Decisão:** nas análises de clientes, usar `customer_unique_id`.
 - **Motivo:** `customer_id` é gerado por pedido, então a mesma pessoa pode ter vários.
-- **A confirmar:** comparar `COUNT(DISTINCT customer_id)` com `COUNT(DISTINCT customer_unique_id)` para quantificar a diferença.
+- **Verificado:** `customers` tem 99.441 `customer_id` e 96.096 `customer_unique_id` distintos, então contar `customer_id` superconta clientes em cerca de 3,4%. Ao agrupar por pessoa, 93.099 têm só 1 `customer_id`, 2.745 têm 2 e as demais têm de 3 a 17, somando 2.997 pessoas com mais de um (cerca de 3%). Os números fecham com os totais da tabela (ver `04_qualidade_dados.sql`, bloco 3).
+- **A confirmar:** se cada `customer_id` corresponde a exatamente um pedido. A contagem de 99.441 é igual à de `orders`, o que sugere isso, mas ainda não conferi o vínculo. Se for verdade, as pessoas com mais de um `customer_id` são as que voltaram a comprar.
 
 ---
 
