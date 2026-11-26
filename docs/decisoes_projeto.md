@@ -101,3 +101,10 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 - **Motivo:** a data estimada vem sempre às 00:00:00, e o `DATEDIFF` compara dias de calendário. Uma entrega às 15h do dia estimado conta como no prazo, porque a promessa ao cliente é "até aquele dia". Comparando os horários direto, essa entrega apareceria como atrasada.
 - **Resultado:** 6.534 dos 96.470 pedidos entregues atrasaram (6,77%).
 - **A confirmar:** a diferença varia de -147 a 188 dias. Ainda não investiguei se os extremos são erros ou casos reais. Podem distorcer médias, então vou comparar média e mediana.
+
+### 015 - Uma nota por pedido: média das avaliações do pedido
+- **Decisão:** quando um pedido tem mais de uma avaliação, uso a média das notas dele, para cada pedido entrar uma vez só na análise.
+- **Motivo:** 547 pedidos têm 2 ou 3 avaliações. Juntando direto, eles aparecem repetidos e pesam mais na média. A média usa todas as avaliações do pedido e dá o mesmo peso a cada pedido.
+- **Alternativa descartada:** ficar com a avaliação mais recente. Exigiria uma window function e descartaria avaliações.
+- **Resultado:** nota média de 4,29 nos pedidos no prazo (89.443) e 2,27 nos atrasados (6.381). As médias são iguais às da versão sem tratamento, então a duplicidade pesava pouco.
+- **Observação:** 646 pedidos entregues não têm avaliação (0,67%) e ficam fora desta média.

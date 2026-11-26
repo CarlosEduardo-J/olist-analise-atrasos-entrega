@@ -75,3 +75,54 @@ SELECT
     MIN(dias_diferenca) AS maior_adiantamento,
     MAX(dias_diferenca) AS maior_atraso
 FROM vw_entregas;
+
+
+-- -----------------------------------------------------------------------------
+-- 2) Nota média: pedidos atrasados vs. no prazo
+-- Pergunta: pedidos atrasados recebem notas piores?
+--
+-- 2.1) Versão simples, juntando vw_entregas direto com order_reviews.
+-- Problema: 547 pedidos têm mais de uma avaliação e aparecem repetidos no JOIN,
+-- então pesam mais na média. Uso LEFT JOIN e COUNT(review_score), que conta só
+-- linhas com nota (COUNT(*) contaria também os pedidos sem avaliação).
+-- Resultado: nota média de 4,29 no prazo e 2,27 atrasados.
+-- -----------------------------------------------------------------------------
+SELECT
+    v.atrasado,
+    ROUND(AVG(od.review_score), 2) AS nota_media,
+    COUNT(od.review_score) AS qtd_avaliacoes
+FROM vw_entregas v
+LEFT JOIN order_reviews od
+    ON v.order_id = od.order_id
+GROUP BY v.atrasado;
+
+
+-- 2.2) Versão tratada: uma nota por pedido (decisão 015).
+-- A CTE reduz as avaliações a uma linha por pedido, com a média das notas dele,
+-- e só depois calculo a média de cada grupo. Assim todo pedido pesa igual.
+-- INNER JOIN porque só quero pedidos com avaliação. Não arredondo dentro da
+-- CTE, só no resultado final.
+-- Resultado: 89.443 pedidos no prazo com nota média de 4,29 e 6.381 atrasados
+-- com 2,27. A soma (95.824) bate com a CTE.
+-- Comparando com a versão simples, as médias não mudaram, então a duplicidade
+-- de avaliações pesava pouco (547 pedidos, cerca de 0,55%).
+-- Conclusão: pedidos atrasados têm nota média cerca de 2 pontos menor. Isso é
+-- uma associação, não prova que o atraso causa a nota baixa.
+-- Ficam de fora desta média 646 pedidos entregues sem avaliação (0,67%).
+-- -----------------------------------------------------------------------------
+WITH avaliacoes_por_id AS (
+    SELECT
+        o.order_id,
+        v.atrasado,
+        AVG(o.review_score) AS nota_media
+    FROM vw_entregas v
+    INNER JOIN order_reviews o
+        ON v.order_id = o.order_id
+    GROUP BY o.order_id, v.atrasado
+)
+SELECT
+    atrasado,
+    COUNT(*) AS qtd,
+    ROUND(AVG(nota_media), 2) AS nota_media
+FROM avaliacoes_por_id
+GROUP BY atrasado;
