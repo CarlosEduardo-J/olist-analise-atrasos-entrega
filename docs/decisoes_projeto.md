@@ -91,3 +91,13 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 - **Problema:** em `products`, 610 produtos não têm categoria (`NULL`) e 13 têm categoria sem tradução em `product_category_translation`: `pc_gamer` (3 produtos) e `portateis_cozinha_e_preparadores_de_alimentos` (10).
 - **Impacto:** na análise por categoria, esses produtos somem de um `JOIN` comum ou aparecem sem nome em inglês.
 - **A decidir:** como tratar nas views. Opções: usar `LEFT JOIN` e mostrar o nome em português quando faltar a tradução, e rotular os 610 como "sem categoria".
+
+---
+
+## Métricas de entrega (`sql/05_views_metricas.sql`)
+
+### 014 - Regra de atraso: dias de calendário, atrasado só se a diferença for maior que 0
+- **Decisão:** calcular a diferença com `DATEDIFF(entrega, estimada)` e considerar o pedido atrasado só quando o resultado é maior que 0. Criei a view `vw_entregas` com essa regra, para o Python e o Power BI usarem a mesma definição.
+- **Motivo:** a data estimada vem sempre às 00:00:00, e o `DATEDIFF` compara dias de calendário. Uma entrega às 15h do dia estimado conta como no prazo, porque a promessa ao cliente é "até aquele dia". Comparando os horários direto, essa entrega apareceria como atrasada.
+- **Resultado:** 6.534 dos 96.470 pedidos entregues atrasaram (6,77%).
+- **A confirmar:** a diferença varia de -147 a 188 dias. Ainda não investiguei se os extremos são erros ou casos reais. Podem distorcer médias, então vou comparar média e mediana.
