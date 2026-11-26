@@ -85,7 +85,8 @@ FROM vw_entregas;
 -- Problema: 547 pedidos têm mais de uma avaliação e aparecem repetidos no JOIN,
 -- então pesam mais na média. Uso LEFT JOIN e COUNT(review_score), que conta só
 -- linhas com nota (COUNT(*) contaria também os pedidos sem avaliação).
--- Resultado: nota média de 4,29 no prazo e 2,27 atrasados.
+-- Resultado: nota média de 4,29 no prazo e 2,27 atrasados (rodei essa versão
+-- antes de corrigir a contagem, então guardei só as médias).
 -- -----------------------------------------------------------------------------
 SELECT
     v.atrasado,
@@ -126,3 +127,46 @@ SELECT
     ROUND(AVG(nota_media), 2) AS nota_media
 FROM avaliacoes_por_id
 GROUP BY atrasado;
+
+
+-- -----------------------------------------------------------------------------
+-- 3) Atraso por estado do cliente
+-- Pergunta: em quais estados os pedidos mais atrasam?
+-- Junto vw_entregas com customers pelo customer_id (INNER JOIN, porque não há
+-- pedidos sem cliente) e agrupo por estado. Mostro o total de pedidos ao lado
+-- do percentual, porque estado com poucos pedidos tem percentual instável.
+--
+-- Conferência: a soma dos totais dá 96.470 e a dos atrasados dá 6.534, os
+-- mesmos números da vw_entregas.
+--
+-- Resultado (taxa geral: 6,77%):
+--  * Maiores taxas: AL 21,41%, MA 17,43%, SE 15,22%, PI 13,87% e CE 13,76%.
+--    Todos do Nordeste, com amostras de centenas de pedidos (335 a 1.279).
+--  * RJ chama atenção: 12,11% em 12.350 pedidos, uma amostra grande. Não é do
+--    Nordeste e tem taxa parecida com a da BA (12,16%).
+--  * Menores taxas: AM 2,76%, RO 2,88%, AP 2,99%, AC 3,75%, PR 4,04% e SP 4,49%.
+--  * Em número absoluto, SP (1.820) e RJ (1.495) concentram mais da metade dos
+--    atrasos, por causa do volume de pedidos. Taxa e quantidade contam histórias
+--    diferentes.
+--  * Cuidado com estados pequenos: RR tem 41 pedidos (5 atrasados), AP 67, AC 80
+--    e AM 145. Um ou dois atrasos a mais mudam muito o percentual.
+--
+-- Observação vs. hipótese:
+--  * Observação: o atraso é maior no Nordeste e no RJ e menor em SP e no Sul.
+--  * Hipótese 1: a distância até os vendedores explica parte do Nordeste. Ainda
+--    não testei, vou testar no Python.
+--  * Hipótese 2: os estados do Norte (AM, RO, AP, AC) são distantes e mesmo
+--    assim têm taxa baixa, o que sugere que a distância sozinha não explica. Pode
+--    ser que o prazo estimado seja mais folgado nessas regiões. Vale comparar o
+--    prazo prometido por estado.
+-- -----------------------------------------------------------------------------
+SELECT
+    c.customer_state,
+    COUNT(*) AS total_pedidos,
+    SUM(v.atrasado) AS qtd_pedidos_atrasados,
+    ROUND(100 * SUM(v.atrasado) / COUNT(*), 2) AS pct_atrasados
+FROM vw_entregas v
+INNER JOIN customers c
+    ON v.customer_id = c.customer_id
+GROUP BY c.customer_state
+ORDER BY pct_atrasados DESC;
