@@ -170,3 +170,100 @@ INNER JOIN customers c
     ON v.customer_id = c.customer_id
 GROUP BY c.customer_state
 ORDER BY pct_atrasados DESC;
+
+
+-- -----------------------------------------------------------------------------
+-- 4) Atraso por categoria de produto
+-- Pergunta: quais categorias têm maior percentual de pedidos atrasados?
+--
+-- O que se conta: order_items tem um registro por item, e um pedido pode ter
+-- vários itens, inclusive de categorias diferentes. Para cada pedido contar uma
+-- vez só por categoria, uso SELECT DISTINCT em pares (pedido, categoria). Um
+-- pedido com itens de duas categorias entra nas duas, então a soma dos totais
+-- por categoria passa de 96.470.
+--
+-- Nome da categoria (decisão 013):
+--  * com tradução: uso o nome em inglês;
+--  * com categoria mas sem tradução (13 produtos): mantenho o nome em português;
+--  * sem categoria (610 produtos): 'sem_categoria'.
+-- Por isso a tradução entra com LEFT JOIN: com INNER JOIN esses produtos
+-- sumiriam da análise sem aviso.
+-- -----------------------------------------------------------------------------
+
+-- 4.1) Conferência: um registro por pedido e categoria.
+-- Esperado: 96.470 pedidos distintos, se todo pedido entregue tiver itens.
+-- Resultado: 97.268 linhas e 96.470 pedidos distintos. Os pedidos distintos
+-- batem com a vw_entregas, então nenhum pedido ficou de fora. As 798 linhas a
+-- mais vêm de pedidos com itens de mais de uma categoria, que aparecem em cada
+-- uma delas.
+-- -----------------------------------------------------------------------------
+WITH pedido_categoria AS (
+    SELECT DISTINCT
+        v.order_id,
+        v.atrasado,
+        COALESCE(pt.product_category_name_english,
+                 p.product_category_name,
+                 'sem_categoria') AS categoria
+    FROM vw_entregas v
+    INNER JOIN order_items oi
+        ON v.order_id = oi.order_id
+    INNER JOIN products p
+        ON oi.product_id = p.product_id
+    LEFT JOIN product_category_translation pt
+        ON p.product_category_name = pt.product_category_name
+)
+SELECT
+    COUNT(*) AS linhas,
+    COUNT(DISTINCT order_id) AS pedidos_distintos
+FROM pedido_categoria;
+
+
+-- 4.2) Percentual de atrasos por categoria.
+-- Só mostro categorias com pelo menos 100 pedidos, porque abaixo disso um atraso
+-- a mais já muda o percentual em 1 ponto percentual ou mais. O valor 100 é uma
+-- escolha minha, e não uma regra estatística.
+-- A soma dos totais passa de 96.470, porque pedidos com itens de mais de uma
+-- categoria entram em cada uma delas.
+--
+-- Resultado (taxa geral: 6,77%):
+--  * Maior taxa: audio, 11,78% (348 pedidos). Menor: construction_tools_safety,
+--    2,52% (159 pedidos, 4 atrasados).
+--  * As categorias de maior volume ficam perto da taxa geral: health_beauty
+--    7,51%, bed_bath_table 7,43%, watches_gifts 7,39%, furniture_decor 7,12%,
+--    sports_leisure 6,57% e computers_accessories 6,39%.
+--  * As menores taxas vêm de categorias pequenas (159 a 274 pedidos), então são
+--    pouco confiáveis. Algumas do topo também têm amostra pequena, como
+--    fashion_underwear_beach (117 pedidos) e christmas_supplies (125).
+--  * sem_categoria (1.392 pedidos, 7,26%) reúne produtos variados e não deve ser
+--    lida como uma categoria de verdade.
+--
+-- Observação: a variação entre categorias (2,52% a 11,78%) é menor que entre
+-- estados (2,76% a 21,41%), e as categorias grandes ficam perto da média.
+-- Hipótese: a localização do cliente pesa mais no atraso do que o tipo de
+-- produto. Ainda não testei isso (por exemplo, olhando as categorias dentro de
+-- cada estado).
+-- -----------------------------------------------------------------------------
+WITH pedido_categoria AS (
+    SELECT DISTINCT
+        v.order_id,
+        v.atrasado,
+        COALESCE(pt.product_category_name_english,
+                 p.product_category_name,
+                 'sem_categoria') AS categoria
+    FROM vw_entregas v
+    INNER JOIN order_items oi
+        ON v.order_id = oi.order_id
+    INNER JOIN products p
+        ON oi.product_id = p.product_id
+    LEFT JOIN product_category_translation pt
+        ON p.product_category_name = pt.product_category_name
+)
+SELECT
+    categoria,
+    COUNT(*) AS total_pedidos,
+    SUM(atrasado) AS qtd_pedidos_atrasados,
+    ROUND(100 * SUM(atrasado) / COUNT(*), 2) AS pct_atrasados
+FROM pedido_categoria
+GROUP BY categoria
+HAVING COUNT(*) >= 100
+ORDER BY pct_atrasados DESC;

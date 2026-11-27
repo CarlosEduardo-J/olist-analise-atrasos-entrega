@@ -90,7 +90,8 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 ### 013 - Produtos sem categoria ou sem tradução
 - **Problema:** em `products`, 610 produtos não têm categoria (`NULL`) e 13 têm categoria sem tradução em `product_category_translation`: `pc_gamer` (3 produtos) e `portateis_cozinha_e_preparadores_de_alimentos` (10).
 - **Impacto:** na análise por categoria, esses produtos somem de um `JOIN` comum ou aparecem sem nome em inglês.
-- **A decidir:** como tratar nas views. Opções: usar `LEFT JOIN` e mostrar o nome em português quando faltar a tradução, e rotular os 610 como "sem categoria".
+- **Decisão:** na análise por categoria, junto com a tabela de tradução por `LEFT JOIN` e uso `COALESCE`: nome em inglês quando existe, nome em português nos 13 produtos sem tradução e `sem_categoria` nos 610 sem categoria. Assim nenhum pedido some da análise (conferi: 96.470 pedidos distintos, o mesmo da `vw_entregas`).
+- **Cuidado:** `sem_categoria` reúne produtos variados, então não interpreto o resultado dela como o de uma categoria.
 
 ---
 
@@ -108,3 +109,8 @@ Itens marcados com **A confirmar** dependem de uma checagem que ainda não fiz.
 - **Alternativa descartada:** ficar com a avaliação mais recente. Exigiria uma window function e descartaria avaliações.
 - **Resultado:** nota média de 4,29 nos pedidos no prazo (89.443) e 2,27 nos atrasados (6.381). As médias são iguais às da versão sem tratamento, então a duplicidade pesava pouco.
 - **Observação:** 646 pedidos entregues não têm avaliação (0,67%) e ficam fora desta média.
+
+### 016 - Mínimo de 100 pedidos para mostrar uma categoria
+- **Decisão:** na análise de atraso por categoria, mostro só categorias com pelo menos 100 pedidos (`HAVING COUNT(*) >= 100`).
+- **Motivo:** com menos de 100 pedidos, um atraso a mais muda a taxa em 1 ponto percentual ou mais, e a taxa fica instável.
+- **Observação:** o 100 é uma escolha minha, não uma regra estatística. Categorias perto do corte, como `fashion_underwear_beach` (117 pedidos), ainda têm taxa frágil. Um corte maior deixaria o resultado mais confiável, mas mostraria menos categorias.
